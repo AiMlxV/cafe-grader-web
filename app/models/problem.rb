@@ -149,7 +149,7 @@ class Problem < ApplicationRecord
     i = 0
     label = []
     value = []
-    while start_date + i < Time.zone.now.to_date
+    while start_date + i <= Time.zone.now.to_date
       if (start_date+i).day == 1
         # label << (start_date+i).strftime("%d %b %Y")
         # label << (start_date+i).strftime("%d")
