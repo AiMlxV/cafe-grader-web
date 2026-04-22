@@ -1,4 +1,9 @@
 class Dataset < ApplicationRecord
+  include Auditable
+  audited only: %i[problem_id name time_limit memory_limit
+                   score_type evaluation_type score_param
+                   main_filename initializer_filename]
+
   belongs_to :problem
 
   has_many :testcases, dependent: :destroy
@@ -9,10 +14,12 @@ class Dataset < ApplicationRecord
                            relative: 2, # token match float relate
                            custom_cafe: 3,
                            custom_cms: 4,
-                           postgres: 5}
+                           postgres: 5,
+                           custom_cms_raw: 6}
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
+                           raw_sum: 2,
                          }, prefix: :st
 
   has_one_attached :checker

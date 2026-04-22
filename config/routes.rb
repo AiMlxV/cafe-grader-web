@@ -1,5 +1,42 @@
 Rails.application.routes.draw do
-  resources :languages, except: [:show]
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
+  # ---- API ----
+  namespace :api do
+    namespace :v1 do
+      post "auth/login", to: "auth#login"
+
+      get "me", to: "users#me"
+      resources :languages, only: [:index]
+
+      resources :contests, only: [:show] do
+        get "problems", on: :member
+      end
+
+      resources :problems, only: [:index, :show] do
+        member do
+          get "description"
+          get "files/:type", action: "file", as: "file"
+          get "data_files"
+          get "testcases"
+        end
+        resources :submissions, only: [:index, :create]
+      end
+
+      resources :testcases, only: [] do
+        member do
+          get "input"
+          get "sol"
+        end
+      end
+
+      resources :submissions, only: [:show]
+    end
+  end
+
+  resources :languages, except: [:show] do
+    post :index_query, on: :collection
+  end
 
   resources :tags do
     post :toggle_public, on: :member
@@ -52,6 +89,8 @@ Rails.application.routes.draw do
   resources :sites
   resources :test
 
+  resources :audit_logs, only: [:index, :show]
+
   resources :messages do
     member do
       get 'hide'
@@ -87,6 +126,8 @@ Rails.application.routes.draw do
       # attachment
       get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
+      # viva exam
+      post 'viva/start', to: 'viva_sessions#start', as: 'viva_start'
     end
     collection do
       get 'turn_all_off'
@@ -160,6 +201,7 @@ Rails.application.routes.draw do
 
   resources :grader_configuration, controller: 'configurations' do
     collection do
+      get 'reload'
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
       post 'clear_user_ip'
     end
@@ -212,6 +254,10 @@ Rails.application.routes.draw do
       get 'rejudge'
       get 'set_tag'
       post 'evaluations'
+      # viva exam
+      get 'viva', to: 'viva_sessions#show', as: 'viva'
+      post 'viva/turns', to: 'viva_sessions#answer', as: 'viva_answer'
+      get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
@@ -227,15 +273,6 @@ Rails.application.routes.draw do
         delete '', action: 'destroy_for_submission'
         patch '', action: 'update_for_submission'
       end
-    end
-  end
-
-  resources :contest_management, only: [:index] do
-    collection do
-      get 'user_stat'
-      get 'clear_stat'
-      get 'clear_all_stat'
-      get 'change_contest_mode'
     end
   end
 
@@ -267,6 +304,8 @@ Rails.application.routes.draw do
 
     # hall of fame
     get 'problem_hof'
+    post 'problem_hof_query'
+    post 'problem_hof_recompute'
     get 'problem_hof/:id', action: 'problem_hof_view', as: 'problem_hof_view'
 
     # get 'progress'
@@ -318,6 +357,9 @@ Rails.application.routes.draw do
     collection do
       get 'queues'
       post 'queues_query'
+      post 'retry_error_job'
+      post 'retry_all_error_jobs'
+      post 'clear_all_error_jobs'
     end
   end
 

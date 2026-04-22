@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :set_current_audit_context
   before_action :current_contest
   before_action :header_info
   before_action :unique_visitor_id
@@ -64,6 +65,11 @@ class ApplicationController < ActionController::Base
 
   # Returns the current logged-in user (if any).
   def current_user
+    # AUTO_LOGIN=user_id automatically logs in as that user in development
+    if ENV['AUTO_LOGIN'].present? && Rails.env.development? && session[:user_id].nil?
+      session[:user_id] = ENV['AUTO_LOGIN'].to_i
+    end
+
     return nil unless session[:user_id]
     @current_user ||= User.includes(:roles).includes(:contests_users).find(session[:user_id]) rescue nil
   end
@@ -110,6 +116,13 @@ class ApplicationController < ActionController::Base
     # so that we can override this value inside each action
     @active_controller = controller_name
     @active_action = action_name
+  end
+
+  # Populate Current attributes for the Auditable concern so model callbacks
+  # can attribute changes to the acting user and their IP.
+  def set_current_audit_context
+    Current.user = @current_user
+    Current.ip   = request.remote_ip
   end
 
   def admin_authorization

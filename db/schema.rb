@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -52,6 +52,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.boolean "on_nav_bar", default: false
     t.bigint "group_id"
     t.index ["group_id"], name: "index_announcements_on_group_id"
+  end
+
+  create_table "audit_logs", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "user_id"
+    t.string "actor_note"
+    t.string "auditable_type", null: false
+    t.bigint "auditable_id", null: false
+    t.string "action", null: false
+    t.json "object_changes"
+    t.string "ip_address", limit: 45
+    t.datetime "created_at", null: false
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
   create_table "comment_reveals", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
@@ -159,7 +173,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.integer "result"
     t.integer "time"
     t.integer "memory"
-    t.decimal "score", precision: 8, scale: 6
+    t.decimal "score", precision: 16, scale: 6
     t.string "result_text"
     t.string "isolate_message"
     t.text "output"
@@ -217,7 +231,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.index ["user_id", "group_id"], name: "index_groups_users_on_user_id_and_group_id"
   end
 
-  create_table "heart_beats", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "heart_beats", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -249,7 +263,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.boolean "binary", default: false
   end
 
-  create_table "logins", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "logins", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -266,6 +280,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.boolean "replied"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "problem_stats", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "problem_id", null: false
+    t.integer "sub_count", default: 0, null: false
+    t.integer "solved_count", default: 0, null: false
+    t.integer "attempted_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["problem_id"], name: "index_problem_stats_on_problem_id", unique: true
   end
 
   create_table "problems", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -290,6 +314,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.string "permitted_lang"
     t.text "log", size: :medium
     t.boolean "allow_hint", default: true
+    t.boolean "view_submission", default: true
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
@@ -307,7 +332,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.string "action"
   end
 
-  create_table "rights_roles", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "rights_roles", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "right_id"
     t.integer "role_id"
     t.index ["role_id"], name: "index_rights_roles_on_role_id"
@@ -317,10 +342,36 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.string "name"
   end
 
-  create_table "roles_users", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "roles_users", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "role_id"
     t.integer "user_id"
     t.index ["user_id"], name: "index_roles_users_on_user_id"
+  end
+
+  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.bigint "dataset_id", null: false
+    t.bigint "submission_id", null: false
+    t.decimal "point", precision: 8, scale: 4
+    t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
+    t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
+  end
+
+  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.bigint "dataset_id", null: false
+    t.bigint "user_id", null: false
+    t.decimal "point", precision: 8, scale: 4
+    t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
+    t.index ["user_id"], name: "index_score_users_on_user_id"
   end
 
   create_table "sessions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -341,128 +392,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.string "password"
   end
 
-  create_table "solid_queue_blocked_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
-    t.string "concurrency_key", null: false
-    t.datetime "expires_at", null: false
-    t.datetime "created_at", null: false
-    t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
-    t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
-    t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
-  end
-
-  create_table "solid_queue_claimed_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.bigint "process_id"
-    t.datetime "created_at", null: false
-    t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
-    t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
-  end
-
-  create_table "solid_queue_failed_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.text "error"
-    t.datetime "created_at", null: false
-    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
-  end
-
-  create_table "solid_queue_jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "queue_name", null: false
-    t.string "class_name", null: false
-    t.text "arguments"
-    t.integer "priority", default: 0, null: false
-    t.string "active_job_id"
-    t.datetime "scheduled_at"
-    t.datetime "finished_at"
-    t.string "concurrency_key"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
-    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
-    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
-    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
-    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
-  end
-
-  create_table "solid_queue_pauses", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "queue_name", null: false
-    t.datetime "created_at", null: false
-    t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
-  end
-
-  create_table "solid_queue_processes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "kind", null: false
-    t.datetime "last_heartbeat_at", null: false
-    t.bigint "supervisor_id"
-    t.integer "pid", null: false
-    t.string "hostname"
-    t.text "metadata"
-    t.datetime "created_at", null: false
-    t.string "name", null: false
-    t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
-    t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
-    t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
-  end
-
-  create_table "solid_queue_ready_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
-    t.datetime "created_at", null: false
-    t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
-    t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
-    t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
-  end
-
-  create_table "solid_queue_recurring_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "task_key", null: false
-    t.datetime "run_at", null: false
-    t.datetime "created_at", null: false
-    t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
-    t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
-  end
-
-  create_table "solid_queue_recurring_tasks", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "key", null: false
-    t.string "schedule", null: false
-    t.string "command", limit: 2048
-    t.string "class_name"
-    t.text "arguments"
-    t.string "queue_name"
-    t.integer "priority", default: 0
-    t.boolean "static", default: true, null: false
-    t.text "description"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
-    t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
-  end
-
-  create_table "solid_queue_scheduled_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
-    t.datetime "scheduled_at", null: false
-    t.datetime "created_at", null: false
-    t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
-    t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
-  end
-
-  create_table "solid_queue_semaphores", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "key", null: false
-    t.integer "value", default: 1, null: false
-    t.datetime "expires_at", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
-    t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
-    t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
-  end
-
-  create_table "submission_view_logs", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "submission_view_logs", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.integer "submission_id"
     t.datetime "created_at", precision: nil, null: false
@@ -479,7 +409,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.datetime "compiled_at", precision: nil
     t.text "compiler_message", size: :medium
     t.datetime "graded_at", precision: nil
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "points", precision: 16, scale: 6
     t.text "grader_comment", size: :medium
     t.integer "number"
     t.string "source_filename"
@@ -509,7 +439,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.integer "kind", default: 0
   end
 
-  create_table "tasks", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "tasks", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "submission_id"
     t.datetime "created_at", precision: nil
     t.integer "status"
@@ -563,7 +493,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 
-  create_table "user_contest_stats", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "user_contest_stats", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.datetime "started_at", precision: nil
     t.datetime "created_at", precision: nil, null: false
@@ -592,6 +522,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
     t.index ["login"], name: "index_users_on_login", unique: true
   end
 
+  create_table "viva_grades", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "submission_id", null: false
+    t.string "rubric_version"
+    t.text "score_json", size: :medium
+    t.decimal "total_points", precision: 8, scale: 4
+    t.text "narrative", size: :medium
+    t.string "llm_model"
+    t.text "llm_response_raw", size: :medium
+    t.float "cost"
+    t.datetime "graded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["submission_id"], name: "index_viva_grades_on_submission_id", unique: true
+  end
+
+  create_table "viva_turns", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "submission_id", null: false
+    t.integer "sequence", null: false
+    t.integer "role", default: 2, null: false
+    t.integer "status", default: 0, null: false
+    t.text "content", size: :medium
+    t.text "llm_response_raw", size: :medium
+    t.string "llm_model"
+    t.float "cost"
+    t.integer "token_count_in"
+    t.integer "token_count_out"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["submission_id", "sequence"], name: "index_viva_turns_on_submission_id_and_sequence", unique: true
+  end
+
   create_table "worker_datasets", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "worker_id"
     t.bigint "dataset_id"
@@ -605,12 +566,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_154201) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "audit_logs", "users", on_delete: :nullify
+  add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
-  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "viva_grades", "submissions"
+  add_foreign_key "viva_turns", "submissions"
 end

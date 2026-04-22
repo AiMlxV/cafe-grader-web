@@ -100,6 +100,7 @@ class User < ApplicationRecord
 
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
+      return Problem.contests_problems_for_user(self.id).none
     elsif GraderConfiguration.contest_mode?
       if [:edit, :report].include? action
         return Problem.contests_editable_problems_for_user(self.id)
@@ -431,11 +432,19 @@ class User < ApplicationRecord
     # For group mode, reporters can always view the submission of the problem
     return true if problems_for_action(:report).include? submission.problem
 
-    # Here, we knows that the user does not have special privileges to the problem
+    # At this step, we knows that the user does not have special privileges to the problem
+
     # problem available is required
     return false unless problems_for_action(:submit).include? submission.problem
 
-    return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
+    # a user can view their own submissions
+    return true if submission.user == self
+
+    # check global disable
+    return false unless GraderConfiguration["right.user_view_submission"]
+
+    # finally, the view_submission of the problem must be true
+    return submission.problem.view_submission
   end
 
   def can_view_testcase?(problem)
